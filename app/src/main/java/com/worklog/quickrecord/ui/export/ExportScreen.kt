@@ -26,6 +26,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +58,8 @@ fun ExportScreen(
     val scope = rememberCoroutineScope()
     var message by remember { mutableStateOf<String?>(null) }
     var confirmRestore by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) { viewModel.refresh() }
 
     val backupLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/zip"),
@@ -347,7 +350,9 @@ fun ExportScreen(
                 TextButton(
                     onClick = {
                         confirmRestore = false
-                        restoreLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+                        // 只用通配：不同机型对 zip 的 MIME 判定不一致，
+                        // 指定具体类型反而会把备份包过滤掉，用户看不到文件。
+                        restoreLauncher.launch(arrayOf("*/*"))
                     },
                 ) { Text(stringResource(R.string.action_confirm)) }
             },

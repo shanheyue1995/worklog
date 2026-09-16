@@ -59,4 +59,20 @@ class ReportLayoutTest {
         assertEquals(2, ReportLayout.rowCount(3, 2))
         assertEquals(3, ReportLayout.rowCount(5, 2))
     }
+
+    @Test
+    fun `单张照片变窄后整行居中`() {
+        // 320 宽的照片放在 515 宽的内容区里，左边留 97.5
+        assertEquals(97.5f, ReportLayout.rowStartX(515f, 320f), 0.01f)
+    }
+
+    @Test
+    fun `占满整行时不偏移`() {
+        assertEquals(0f, ReportLayout.rowStartX(515f, 515f), 0.01f)
+    }
+
+    @Test
+    fun `内容比内容区还宽时不产生负偏移`() {
+        assertEquals(0f, ReportLayout.rowStartX(515f, 600f), 0.01f)
+    }
 }

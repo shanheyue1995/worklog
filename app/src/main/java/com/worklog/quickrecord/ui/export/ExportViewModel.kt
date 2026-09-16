@@ -76,6 +76,16 @@ class ExportViewModel(
         reload()
     }
 
+    /**
+     * 重新统计当前范围内的记录数。
+     *
+     * 界面每次进入都要调一次：ViewModel 是复用的，不刷新的话会拿上次的数字，
+     * 出现"显示 0 条、导出却有内容"这种自相矛盾的情况。
+     */
+    fun refresh() {
+        if (state == ExportState.Choosing) reload()
+    }
+
     private fun reload() {
         viewModelScope.launch {
             val period = DateRangeCalculator.period(range, LocalDate.now())

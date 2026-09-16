@@ -207,7 +207,9 @@ object ReportExporter {
             y += PHOTO_GAP
             var bitmapIndex = 0
             layouts.photoRows.forEachIndexed { rowIndex, row ->
-                var x = MARGIN
+                val rowWidth = row.sumOf { it.width.toDouble() }.toFloat() +
+                    COLUMN_GAP * (row.size - 1).coerceAtLeast(0)
+                var x = MARGIN + ReportLayout.rowStartX(CONTENT_WIDTH, rowWidth)
                 var rowHeight = 0f
                 row.forEach { size ->
                     val bitmap = photos.getOrNull(bitmapIndex)

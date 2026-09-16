@@ -32,4 +32,15 @@ object ReportLayout {
         if (photoCount <= 0) return 0
         return (photoCount + columns - 1) / columns
     }
+
+    /**
+     * 一行照片在内容区里的起始横坐标。
+     *
+     * 照片被高度上限压低之后，一行往往占不满内容宽度，靠左排会留出大片空白，
+     * 看起来像排版出错，所以整行居中。
+     */
+    fun rowStartX(contentWidth: Float, rowWidth: Float): Float {
+        val offset = (contentWidth - rowWidth) / 2f
+        return offset.coerceAtLeast(0f)
+    }
 }
