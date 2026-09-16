@@ -18,6 +18,8 @@ import com.worklog.quickrecord.ui.detail.RecordDetailScreen
 import com.worklog.quickrecord.ui.detail.RecordDetailViewModel
 import com.worklog.quickrecord.ui.edit.RecordEditScreen
 import com.worklog.quickrecord.ui.edit.RecordEditViewModel
+import com.worklog.quickrecord.ui.export.ExportScreen
+import com.worklog.quickrecord.ui.export.ExportViewModel
 import com.worklog.quickrecord.ui.list.RecordListScreen
 import com.worklog.quickrecord.ui.list.RecordListViewModel
 
@@ -27,6 +29,7 @@ import com.worklog.quickrecord.ui.list.RecordListViewModel
  */
 sealed interface AppScreen {
     data object List : AppScreen
+    data object Export : AppScreen
     data class Detail(val id: Long) : AppScreen
     data class Edit(val id: Long?) : AppScreen
 }
@@ -52,6 +55,17 @@ fun AppRoot(container: AppContainer, modifier: Modifier = Modifier) {
             }
         },
     )
+    val exportViewModel: ExportViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer {
+                ExportViewModel(
+                    repository = container.recordRepository,
+                    photoStore = container.photoStore,
+                    exportDir = container.exportDir,
+                )
+            }
+        },
+    )
 
     CompositionLocalProvider(LocalPhotoStore provides container.photoStore) {
         when (val current = screen) {
@@ -62,6 +76,15 @@ fun AppRoot(container: AppContainer, modifier: Modifier = Modifier) {
                     onQueryChange = listViewModel::onQueryChange,
                     onOpenRecord = { id -> screen = AppScreen.Detail(id) },
                     onCreateRecord = { screen = AppScreen.Edit(null) },
+                    onOpenExport = { screen = AppScreen.Export },
+                    modifier = modifier,
+                )
+            }
+
+            AppScreen.Export -> {
+                ExportScreen(
+                    viewModel = exportViewModel,
+                    onBack = { screen = AppScreen.List },
                     modifier = modifier,
                 )
             }

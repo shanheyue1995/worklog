@@ -23,5 +23,8 @@ class AppContainer(context: Context) {
 
     val photoStore: PhotoStore = PhotoStore(File(appContext.filesDir, "photos"))
 
+    /** 导出的报告放在缓存目录，系统清理时不影响记录本身。 */
+    val exportDir: File = File(appContext.cacheDir, "exports").apply { mkdirs() }
+
     val recordRepository: RecordRepository = RecordRepository(database, photoStore)
 }
