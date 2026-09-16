@@ -1,0 +1,44 @@
+package com.worklog.quickrecord.ui.list
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.worklog.quickrecord.data.RecordRepository
+import com.worklog.quickrecord.domain.Record
+import com.worklog.quickrecord.domain.RecordSearch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+
+data class RecordListUiState(
+    val records: List<Record> = emptyList(),
+    val query: String = "",
+    val frequentPlaces: List<String> = emptyList(),
+    val totalCount: Int = 0,
+)
+
+class RecordListViewModel(private val repository: RecordRepository) : ViewModel() {
+
+    private val query = MutableStateFlow("")
+
+    val uiState: StateFlow<RecordListUiState> = combine(
+        repository.observeRecords(),
+        query,
+    ) { records, keyword ->
+        RecordListUiState(
+            records = RecordSearch.filter(records, keyword),
+            query = keyword,
+            frequentPlaces = RecordSearch.frequentPlaces(records),
+            totalCount = records.size,
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = RecordListUiState(),
+    )
+
+    fun onQueryChange(value: String) {
+        query.value = value
+    }
+}
