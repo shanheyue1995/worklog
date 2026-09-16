@@ -3,8 +3,11 @@ package com.worklog.quickrecord.ui.list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.worklog.quickrecord.data.RecordRepository
+import com.worklog.quickrecord.data.Preferences
 import com.worklog.quickrecord.domain.Record
 import com.worklog.quickrecord.domain.RecordSearch
+import com.worklog.quickrecord.reminder.ReminderRules
+import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,21 +19,33 @@ data class RecordListUiState(
     val query: String = "",
     val frequentPlaces: List<String> = emptyList(),
     val totalCount: Int = 0,
+    val reminder: ReminderRules.State = ReminderRules.State.None,
 )
 
-class RecordListViewModel(private val repository: RecordRepository) : ViewModel() {
+class RecordListViewModel(
+    repository: RecordRepository,
+    private val preferences: Preferences,
+) : ViewModel() {
 
     private val query = MutableStateFlow("")
 
     val uiState: StateFlow<RecordListUiState> = combine(
         repository.observeRecords(),
         query,
-    ) { records, keyword ->
+        preferences.lastExportDate,
+        preferences.reminderEnabled,
+    ) { records, keyword, lastExport, reminderEnabled ->
         RecordListUiState(
             records = RecordSearch.filter(records, keyword),
             query = keyword,
             frequentPlaces = RecordSearch.frequentPlaces(records),
             totalCount = records.size,
+            reminder = ReminderRules.evaluate(
+                lastExport = lastExport,
+                today = LocalDate.now(),
+                hasRecords = records.isNotEmpty(),
+                reminderEnabled = reminderEnabled,
+            ),
         )
     }.stateIn(
         scope = viewModelScope,

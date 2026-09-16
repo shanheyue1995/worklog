@@ -82,6 +82,9 @@ interface RecordDao {
 
     @Query("DELETE FROM photos WHERE recordId = :recordId")
     suspend fun deletePhotosOf(recordId: Long)
+
+    @Query("SELECT COUNT(*) FROM records")
+    suspend fun countRecords(): Int
 }
 
 @Database(

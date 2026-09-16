@@ -1,16 +1,20 @@
 package com.worklog.quickrecord.ui.export
 
+import android.content.Context
+
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.worklog.quickrecord.data.PhotoStore
+import com.worklog.quickrecord.data.Preferences
 import com.worklog.quickrecord.data.RecordRepository
 import com.worklog.quickrecord.data.ReportExporter
 import com.worklog.quickrecord.domain.DateRangeCalculator
 import com.worklog.quickrecord.domain.ExportRange
 import com.worklog.quickrecord.domain.Record
+import com.worklog.quickrecord.widget.WidgetRefresh
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -43,6 +47,8 @@ class ExportViewModel(
     private val repository: RecordRepository,
     private val photoStore: PhotoStore,
     private val exportDir: File,
+    private val preferences: Preferences,
+    private val appContext: Context,
 ) : ViewModel() {
 
     var range by mutableStateOf(ExportRange.ThisMonth)
@@ -112,6 +118,8 @@ class ExportViewModel(
             state = if (result == null) {
                 ExportState.Failed
             } else {
+                preferences.setLastExportDate(LocalDate.now())
+                WidgetRefresh.refresh(appContext)
                 ExportState.Done(
                     file = result.file,
                     pageCount = result.pageCount,

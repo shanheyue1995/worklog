@@ -27,6 +27,8 @@ class RecordRepository(
             .firstOrNull { it.record.id == id }
             ?.toDomain()
 
+    suspend fun countRecords(): Int = dao.countRecords()
+
     /**
      * 新增或更新一条记录。照片采用"先删后插"的简单策略，整体包在事务里，
      * 避免中途失败留下半条记录；被移除的照片文件同时删掉，不留垃圾。

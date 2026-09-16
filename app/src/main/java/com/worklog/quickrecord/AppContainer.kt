@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.worklog.quickrecord.data.AppDatabase
 import com.worklog.quickrecord.data.PhotoStore
+import com.worklog.quickrecord.data.Preferences
 import com.worklog.quickrecord.data.RecordRepository
 import java.io.File
 
@@ -15,13 +16,15 @@ import java.io.File
  */
 class AppContainer(context: Context) {
 
-    private val appContext = context.applicationContext
+    val appContext: Context = context.applicationContext
 
     private val database: AppDatabase = Room
         .databaseBuilder(appContext, AppDatabase::class.java, "quickrecord.db")
         .build()
 
     val photoStore: PhotoStore = PhotoStore(File(appContext.filesDir, "photos"))
+
+    val preferences: Preferences = Preferences(appContext)
 
     /** 导出的报告放在缓存目录，系统清理时不影响记录本身。 */
     val exportDir: File = File(appContext.cacheDir, "exports").apply { mkdirs() }

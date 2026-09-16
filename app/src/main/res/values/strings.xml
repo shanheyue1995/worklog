@@ -23,6 +23,16 @@
     <string name="share_chooser">分享报告</string>
     <string name="export_saved">报告已保存</string>
     <string name="export_save_failed">保存失败</string>
+    <string name="notification_channel_name">导出提醒</string>
+    <string name="notification_channel_desc">每月提醒导出工作记录</string>
+    <string name="notification_title">该导出工作记录了</string>
+    <string name="notification_text">导出一份备份，换手机或丢失后还能找回。</string>
+    <string name="widget_description">显示距离上次导出已经过了多久</string>
+    <string name="reminder_stale">距上次导出 %1$d 天</string>
+    <string name="reminder_never">还没有导出过</string>
+    <string name="reminder_body">导出一份备份，换手机或丢失后还能找回</string>
+    <string name="action_go_export">去导出</string>
+    <string name="action_dismiss">关闭提示</string>
     <string name="action_new_record">＋ 新建记录</string>
     <string name="action_save">保存记录</string>
     <string name="action_edit">编辑</string>

@@ -19,7 +19,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,6 +36,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import com.worklog.quickrecord.R
 import com.worklog.quickrecord.domain.Record
 import com.worklog.quickrecord.ui.LocalPhoto
+import com.worklog.quickrecord.ui.theme.LocalWarningColors
+import com.worklog.quickrecord.reminder.ReminderRules
 import com.worklog.quickrecord.util.DisplayFormat
 
 @Composable
@@ -59,6 +66,16 @@ fun RecordListScreen(
                 TextButton(onClick = onOpenExport) {
                     Text(stringResource(R.string.action_export))
                 }
+            }
+
+            var dismissed by remember(state.reminder) { mutableStateOf(false) }
+            if (state.reminder != ReminderRules.State.None && !dismissed) {
+                ExportReminderBanner(
+                    state = state.reminder,
+                    onExport = onOpenExport,
+                    onDismiss = { dismissed = true },
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                )
             }
 
             OutlinedTextField(
@@ -105,6 +122,53 @@ fun RecordListScreen(
                 .padding(20.dp),
         ) {
             Text(stringResource(R.string.action_new_record))
+        }
+    }
+}
+
+@Composable
+private fun ExportReminderBanner(
+    state: ReminderRules.State,
+    onExport: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val warning = LocalWarningColors.current
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = warning.container,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 14.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = when (state) {
+                        is ReminderRules.State.Stale ->
+                            stringResource(R.string.reminder_stale, state.days)
+                        ReminderRules.State.NeverExported ->
+                            stringResource(R.string.reminder_never)
+                        ReminderRules.State.None -> ""
+                    },
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Medium,
+                    color = warning.content,
+                )
+                Text(
+                    text = stringResource(R.string.reminder_body),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TextButton(onClick = onExport) {
+                Text(stringResource(R.string.action_go_export))
+            }
+            TextButton(onClick = onDismiss) {
+                Text("×", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }

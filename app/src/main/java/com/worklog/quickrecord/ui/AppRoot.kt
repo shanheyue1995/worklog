@@ -40,7 +40,9 @@ fun AppRoot(container: AppContainer, modifier: Modifier = Modifier) {
 
     val listViewModel: RecordListViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { RecordListViewModel(container.recordRepository) }
+            initializer {
+                RecordListViewModel(container.recordRepository, container.preferences)
+            }
         },
     )
     val detailViewModel: RecordDetailViewModel = viewModel(
@@ -62,6 +64,8 @@ fun AppRoot(container: AppContainer, modifier: Modifier = Modifier) {
                     repository = container.recordRepository,
                     photoStore = container.photoStore,
                     exportDir = container.exportDir,
+                    preferences = container.preferences,
+                    appContext = container.appContext,
                 )
             }
         },
