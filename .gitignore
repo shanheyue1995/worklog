@@ -1,0 +1,19 @@
+# 本地工具链（体积约 1GB，不入版本库）
+工具链/
+
+# 构建产物
+build/
+.gradle/
+.cxx/
+captures/
+*.apk
+*.aab
+
+# 本地环境配置
+local.properties
+.idea/
+*.iml
+
+# 系统文件
+.DS_Store
+Thumbs.db
