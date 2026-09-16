@@ -4,6 +4,7 @@ toolchain/
 # 构建产物
 build/
 .gradle/
+.kotlin/
 .cxx/
 captures/
 *.apk
