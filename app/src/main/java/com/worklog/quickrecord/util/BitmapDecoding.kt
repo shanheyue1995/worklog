@@ -23,23 +23,11 @@ object BitmapDecoding {
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
 
         val options = BitmapFactory.Options().apply {
-            inSampleSize = calculateInSampleSize(bounds.outWidth, bounds.outHeight, maxSize)
+            inSampleSize = ImageSizing.sampleSize(bounds.outWidth, bounds.outHeight, maxSize)
             inPreferredConfig = Bitmap.Config.RGB_565
         }
         val decoded = BitmapFactory.decodeFile(file.absolutePath, options) ?: return null
         return applyExifRotation(file, decoded)
-    }
-
-    /** 采样率取 2 的幂，这是 BitmapFactory 内部的约定。 */
-    fun calculateInSampleSize(width: Int, height: Int, maxSize: Int): Int {
-        if (maxSize <= 0) return 1
-        var sample = 1
-        var longest = maxOf(width, height)
-        while (longest / 2 >= maxSize) {
-            longest /= 2
-            sample *= 2
-        }
-        return sample
     }
 
     private fun applyExifRotation(file: File, bitmap: Bitmap): Bitmap {

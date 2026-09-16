@@ -25,5 +25,9 @@
     <string name="error_missing_place">请填写地点</string>
     <string name="error_missing_description">请填写出现的问题与解决方法</string>
     <string name="photo_add">拍照 / 相册</string>
+    <string name="photo_from_camera">拍照</string>
+    <string name="photo_from_gallery">从相册选</string>
+    <string name="photo_source_hint">照片保存在 App 内，不会出现在系统相册。拍完可以接着拍下一张。</string>
+    <string name="photo_failed">照片处理失败，换一张再试</string>
     <string name="photo_remove">移除这张照片</string>
 </resources>

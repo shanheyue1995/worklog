@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- 拍摄时系统相机写入的临时位置 -->
+    <files-path
+        name="capture"
+        path="tmp/" />
+    <!-- 压缩后的正式照片 -->
+    <files-path
+        name="photos"
+        path="photos/" />
+    <!-- 导出的报告 -->
+    <cache-path
+        name="exports"
+        path="exports/" />
+</paths>
