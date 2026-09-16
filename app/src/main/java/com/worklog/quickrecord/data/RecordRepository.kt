@@ -29,6 +29,21 @@ class RecordRepository(
 
     suspend fun countRecords(): Int = dao.countRecords()
 
+    suspend fun listAll(): List<Record> = dao.listAll().map { it.toDomain() }
+
+    /** 恢复备份时用：清空现有记录后整批写回。 */
+    suspend fun replaceAll(records: List<Record>) = database.withTransaction {
+        dao.deleteAllRecords()
+        records.forEach { record ->
+            val id = dao.insertRecord(record.toEntity())
+            if (record.photos.isNotEmpty()) {
+                dao.insertPhotos(
+                    record.photos.mapIndexed { index, photo -> photo.toEntity(id, index) },
+                )
+            }
+        }
+    }
+
     /**
      * 新增或更新一条记录。照片采用"先删后插"的简单策略，整体包在事务里，
      * 避免中途失败留下半条记录；被移除的照片文件同时删掉，不留垃圾。

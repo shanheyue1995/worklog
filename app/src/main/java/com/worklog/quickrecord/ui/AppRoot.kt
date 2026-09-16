@@ -88,6 +88,7 @@ fun AppRoot(container: AppContainer, modifier: Modifier = Modifier) {
             AppScreen.Export -> {
                 ExportScreen(
                     viewModel = exportViewModel,
+                    backupManager = container.backupManager,
                     onBack = { screen = AppScreen.List },
                     modifier = modifier,
                 )

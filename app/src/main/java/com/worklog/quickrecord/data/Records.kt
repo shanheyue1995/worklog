@@ -85,6 +85,13 @@ interface RecordDao {
 
     @Query("SELECT COUNT(*) FROM records")
     suspend fun countRecords(): Int
+
+    @Transaction
+    @Query("SELECT * FROM records ORDER BY occurredAt ASC")
+    suspend fun listAll(): List<RecordWithPhotos>
+
+    @Query("DELETE FROM records")
+    suspend fun deleteAllRecords()
 }
 
 @Database(

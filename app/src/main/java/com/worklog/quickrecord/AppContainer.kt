@@ -3,6 +3,7 @@ package com.worklog.quickrecord
 import android.content.Context
 import androidx.room.Room
 import com.worklog.quickrecord.data.AppDatabase
+import com.worklog.quickrecord.data.BackupManager
 import com.worklog.quickrecord.data.PhotoStore
 import com.worklog.quickrecord.data.Preferences
 import com.worklog.quickrecord.data.RecordRepository
@@ -30,4 +31,6 @@ class AppContainer(context: Context) {
     val exportDir: File = File(appContext.cacheDir, "exports").apply { mkdirs() }
 
     val recordRepository: RecordRepository = RecordRepository(database, photoStore)
+
+    val backupManager: BackupManager = BackupManager(recordRepository, photoStore)
 }

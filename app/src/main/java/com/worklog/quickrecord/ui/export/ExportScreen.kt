@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.worklog.quickrecord.R
+import com.worklog.quickrecord.data.BackupManager
 import com.worklog.quickrecord.domain.ExportRange
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -47,12 +49,64 @@ import java.io.File
 @Composable
 fun ExportScreen(
     viewModel: ExportViewModel,
+    backupManager: BackupManager,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var message by remember { mutableStateOf<String?>(null) }
+    var confirmRestore by remember { mutableStateOf(false) }
+
+    val backupLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip"),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val count = withContext(Dispatchers.IO) {
+                try {
+                    val temp = File(context.cacheDir, "quickrecord-backup.zip")
+                    val written = backupManager.export(temp)
+                    context.contentResolver.openOutputStream(uri)?.use { output ->
+                        temp.inputStream().use { input -> input.copyTo(output) }
+                    }
+                    temp.delete()
+                    written
+                } catch (error: Exception) {
+                    -1
+                }
+            }
+            message = if (count >= 0) {
+                context.getString(R.string.backup_done, count)
+            } else {
+                context.getString(R.string.backup_failed)
+            }
+        }
+    }
+
+    val restoreLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val count = withContext(Dispatchers.IO) {
+                try {
+                    val temp = File(context.cacheDir, "quickrecord-restore.zip")
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        temp.outputStream().use { output -> input.copyTo(output) }
+                    }
+                    backupManager.import(temp).also { temp.delete() }
+                } catch (error: Exception) {
+                    null
+                }
+            }
+            message = if (count != null) {
+                context.getString(R.string.restore_done, count)
+            } else {
+                context.getString(R.string.restore_failed)
+            }
+        }
+    }
 
     val saveLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/pdf"),
@@ -143,6 +197,48 @@ fun ExportScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(14.dp),
                         )
+                    }
+
+                    // 纯本地方案下，备份是唯一的数据保险，放在导出页一起出现。
+                    Card(
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.backup_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            Text(
+                                text = stringResource(R.string.backup_note),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Button(
+                                    onClick = {
+                                        backupLauncher.launch("工作快录备份.zip")
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    Text(stringResource(R.string.action_backup))
+                                }
+                                OutlinedButton(
+                                    onClick = { confirmRestore = true },
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    Text(stringResource(R.string.action_restore))
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -240,6 +336,27 @@ fun ExportScreen(
                 }
             }
         }
+    }
+
+    if (confirmRestore) {
+        AlertDialog(
+            onDismissRequest = { confirmRestore = false },
+            title = { Text(stringResource(R.string.restore_confirm_title)) },
+            text = { Text(stringResource(R.string.restore_confirm_text)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmRestore = false
+                        restoreLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+                    },
+                ) { Text(stringResource(R.string.action_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmRestore = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
     }
 }
 
