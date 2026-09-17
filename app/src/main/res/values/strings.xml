@@ -60,8 +60,6 @@
     <string name="label_photos">照片</string>
     <string name="place_hint">如：高二(3)班</string>
     <string name="description_hint">说说出了什么问题、怎么处理的</string>
-    <string name="voice_hint">按住说话，自动转成文字</string>
-    <string name="voice_unavailable">这台手机没有语音识别，请用输入法上的麦克风说话</string>
     <string name="error_missing_place">请填写地点</string>
     <string name="error_missing_description">请填写出现的问题与解决方法</string>
     <string name="photo_add">拍照 / 相册</string>

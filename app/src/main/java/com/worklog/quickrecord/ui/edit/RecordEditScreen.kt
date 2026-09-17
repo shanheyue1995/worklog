@@ -1,9 +1,6 @@
 package com.worklog.quickrecord.ui.edit
 
-import android.content.ActivityNotFoundException
-import android.content.Intent
 import android.net.Uri
-import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -55,7 +52,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.util.Locale
 
 @Composable
 fun RecordEditScreen(
@@ -68,19 +64,9 @@ fun RecordEditScreen(
     val photoStore = LocalPhotoStore.current
     val scope = rememberCoroutineScope()
 
-    var voiceUnavailable by remember { mutableStateOf(false) }
     var photoChooserVisible by remember { mutableStateOf(false) }
     var photoFailed by remember { mutableStateOf(false) }
     var pendingCapture by remember { mutableStateOf<File?>(null) }
-
-    val voiceLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult(),
-    ) { result ->
-        val text = result.data
-            ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-            ?.firstOrNull()
-        if (!text.isNullOrBlank()) viewModel.appendVoiceText(text)
-    }
 
     // 相册选择走系统照片选择器，不需要读取相册的权限。
     val galleryLauncher = rememberLauncherForActivityResult(
@@ -238,40 +224,6 @@ fun RecordEditScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Button(
-                    onClick = {
-                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                            putExtra(
-                                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM,
-                            )
-                            putExtra(
-                                RecognizerIntent.EXTRA_LANGUAGE,
-                                Locale.getDefault().toLanguageTag(),
-                            )
-                            putExtra(
-                                RecognizerIntent.EXTRA_PROMPT,
-                                context.getString(R.string.description_hint),
-                            )
-                        }
-                        try {
-                            voiceLauncher.launch(intent)
-                        } catch (error: ActivityNotFoundException) {
-                            voiceUnavailable = true
-                        }
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(R.string.voice_hint))
-                }
-                if (voiceUnavailable) {
-                    Text(
-                        text = stringResource(R.string.voice_unavailable),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
             }
 
             SectionBlock(stringResource(R.string.label_photos)) {

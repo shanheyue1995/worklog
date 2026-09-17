@@ -91,11 +91,6 @@ class RecordEditViewModel(
         validationError = null
     }
 
-    fun appendVoiceText(text: String) {
-        description = if (description.isBlank()) text else "$description$text"
-        validationError = null
-    }
-
     fun addPhoto(relativePath: String, width: Int, height: Int) {
         if (photos.size >= RecordValidator.MAX_PHOTOS) return
         photos.add(0, Photo(relativePath = relativePath, width = width, height = height))

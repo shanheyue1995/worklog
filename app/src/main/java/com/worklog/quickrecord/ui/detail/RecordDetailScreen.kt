@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -135,11 +137,16 @@ fun RecordDetailScreen(
             OutlinedButton(onClick = onEdit, modifier = Modifier.weight(1f)) {
                 Text(stringResource(R.string.action_edit))
             }
-            TextButton(onClick = onDelete, modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.action_delete),
-                    color = MaterialTheme.colorScheme.error,
-                )
+            // 与「编辑」保持同样的胶囊外形，只用颜色区分这是破坏性操作。
+            OutlinedButton(
+                onClick = onDelete,
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error,
+                ),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(stringResource(R.string.action_delete))
             }
         }
     }
