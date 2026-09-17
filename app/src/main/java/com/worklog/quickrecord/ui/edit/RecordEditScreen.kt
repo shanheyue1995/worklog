@@ -4,10 +4,11 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,15 +16,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,17 +35,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import com.worklog.quickrecord.R
 import com.worklog.quickrecord.data.PhotoImport
 import com.worklog.quickrecord.domain.RecordValidator
 import com.worklog.quickrecord.ui.LocalPhoto
 import com.worklog.quickrecord.ui.LocalPhotoStore
+import com.worklog.quickrecord.ui.icons.BackIcon
+import com.worklog.quickrecord.ui.icons.CameraIcon
+import com.worklog.quickrecord.ui.icons.EraserIcon
 import com.worklog.quickrecord.ui.showDateTimePicker
+import com.worklog.quickrecord.ui.theme.LocalAppColors
 import com.worklog.quickrecord.util.DisplayFormat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -60,6 +66,7 @@ fun RecordEditScreen(
     onSaved: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = LocalAppColors.current
     val context = LocalContext.current
     val photoStore = LocalPhotoStore.current
     val scope = rememberCoroutineScope()
@@ -68,7 +75,6 @@ fun RecordEditScreen(
     var photoFailed by remember { mutableStateOf(false) }
     var pendingCapture by remember { mutableStateOf<File?>(null) }
 
-    // 相册选择走系统照片选择器，不需要读取相册的权限。
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia(),
     ) { uri: Uri? ->
@@ -99,7 +105,6 @@ fun RecordEditScreen(
         }
     }
 
-    // 系统相机把原图写进我们指定的临时位置，返回后再压缩入库。
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture(),
     ) { success ->
@@ -125,12 +130,9 @@ fun RecordEditScreen(
         val temp = photoStore.newTempFile()
         pendingCapture = temp
         try {
-            val uri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                temp,
+            cameraLauncher.launch(
+                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", temp),
             )
-            cameraLauncher.launch(uri)
         } catch (error: Exception) {
             photoStore.deleteFile(temp)
             pendingCapture = null
@@ -142,21 +144,36 @@ fun RecordEditScreen(
         if (viewModel.saved) onSaved()
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize().background(colors.page)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 20.dp, top = 8.dp, bottom = 8.dp),
+                .padding(start = 10.dp, end = 16.dp, top = 8.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = onBack) { Text(stringResource(R.string.action_back)) }
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .clickable(onClick = onBack),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = BackIcon,
+                    contentDescription = stringResource(R.string.action_back),
+                    tint = colors.ink,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+            Spacer(Modifier.width(6.dp))
             Text(
                 text = stringResource(
                     if (viewModel.isEditing) R.string.screen_edit_record else R.string.screen_new_record,
                 ),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(start = 4.dp),
+                fontSize = 21.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = (-0.3).sp,
+                color = colors.ink,
             )
         }
 
@@ -164,100 +181,150 @@ fun RecordEditScreen(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+                .padding(horizontal = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            SectionBlock(stringResource(R.string.label_time)) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
+            FieldCard(label = stringResource(R.string.label_time)) {
+                Row(
                     modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(
-                        modifier = Modifier.padding(start = 14.dp, end = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(DisplayFormat.full(viewModel.occurredAt))
-                        TextButton(
-                            onClick = {
+                    Text(
+                        text = DisplayFormat.full(viewModel.occurredAt),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = colors.ink,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(999.dp))
+                            .clickable {
                                 showDateTimePicker(context, viewModel.occurredAt) {
                                     viewModel.onOccurredAtChange(it)
                                 }
                             },
-                        ) {
-                            Text(stringResource(R.string.action_change_time))
-                        }
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = EraserIcon,
+                            contentDescription = stringResource(R.string.action_change_time),
+                            tint = colors.brand,
+                            modifier = Modifier.size(23.dp),
+                        )
                     }
                 }
+                Text(
+                    text = stringResource(R.string.time_hint),
+                    fontSize = 12.sp,
+                    color = colors.subSoft,
+                )
             }
 
-            SectionBlock(stringResource(R.string.label_place)) {
-                OutlinedTextField(
+            FieldCard(label = stringResource(R.string.label_place)) {
+                BasicTextField(
                     value = viewModel.place,
                     onValueChange = viewModel::onPlaceChange,
-                    placeholder = { Text(stringResource(R.string.place_hint)) },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
+                    textStyle = TextStyle(fontSize = 17.sp, fontWeight = FontWeight.Medium, color = colors.ink),
+                    cursorBrush = SolidColor(colors.brand),
                     modifier = Modifier.fillMaxWidth(),
+                    decorationBox = { inner ->
+                        if (viewModel.place.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.place_hint),
+                                fontSize = 17.sp,
+                                color = colors.subSoft,
+                            )
+                        }
+                        inner()
+                    },
                 )
                 if (viewModel.frequentPlaces.isNotEmpty()) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         viewModel.frequentPlaces.take(3).forEach { place ->
-                            OutlinedButton(
-                                onClick = { viewModel.onPlaceChange(place) },
-                                shape = RoundedCornerShape(999.dp),
-                            ) {
-                                Text(place, style = MaterialTheme.typography.labelLarge)
-                            }
+                            Text(
+                                text = place,
+                                fontSize = 13.sp,
+                                color = colors.tileForeground,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(999.dp))
+                                    .background(colors.tile)
+                                    .clickable { viewModel.onPlaceChange(place) }
+                                    .padding(horizontal = 13.dp, vertical = 7.dp),
+                            )
                         }
                     }
                 }
             }
 
-            SectionBlock(stringResource(R.string.label_description)) {
-                OutlinedTextField(
+            FieldCard(label = stringResource(R.string.label_description)) {
+                BasicTextField(
                     value = viewModel.description,
                     onValueChange = viewModel::onDescriptionChange,
-                    placeholder = { Text(stringResource(R.string.description_hint)) },
-                    minLines = 4,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = TextStyle(fontSize = 15.sp, lineHeight = 24.sp, color = colors.ink),
+                    cursorBrush = SolidColor(colors.brand),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(96.dp),
+                    decorationBox = { inner ->
+                        if (viewModel.description.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.description_hint),
+                                fontSize = 15.sp,
+                                color = colors.subSoft,
+                            )
+                        }
+                        inner()
+                    },
+                )
+                Text(
+                    text = stringResource(R.string.desc_ime_hint),
+                    fontSize = 12.sp,
+                    color = colors.subSoft,
                 )
             }
 
-            SectionBlock(stringResource(R.string.label_photos)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FieldCard(
+                label = if (viewModel.photos.isEmpty()) {
+                    stringResource(R.string.label_photos)
+                } else {
+                    stringResource(R.string.label_photos) + " " + viewModel.photos.size + " 张"
+                },
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     viewModel.photos.forEach { photo ->
-                        Box {
-                            LocalPhoto(
-                                relativePath = photo.relativePath,
-                                maxSize = 320,
-                                modifier = Modifier
-                                    .size(78.dp)
-                                    .clip(RoundedCornerShape(14.dp)),
-                            )
-                            TextButton(
-                                onClick = { viewModel.removePhoto(photo) },
-                                contentPadding = PaddingValues(0.dp),
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .size(28.dp),
-                            ) {
-                                Text("×", color = MaterialTheme.colorScheme.error)
-                            }
-                        }
+                        LocalPhoto(
+                            relativePath = photo.relativePath,
+                            maxSize = 320,
+                            modifier = Modifier
+                                .size(70.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .clickable { viewModel.removePhoto(photo) },
+                        )
                     }
                     if (viewModel.photos.size < RecordValidator.MAX_PHOTOS) {
-                        OutlinedButton(
-                            onClick = { photoChooserVisible = true },
-                            shape = RoundedCornerShape(14.dp),
-                            contentPadding = PaddingValues(4.dp),
-                            modifier = Modifier.size(78.dp),
+                        Column(
+                            modifier = Modifier
+                                .size(70.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(colors.page)
+                                .clickable { photoChooserVisible = true },
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
+                            Icon(
+                                imageVector = CameraIcon,
+                                contentDescription = null,
+                                tint = colors.sub,
+                                modifier = Modifier.size(24.dp),
+                            )
+                            Spacer(Modifier.height(5.dp))
                             Text(
                                 text = stringResource(R.string.photo_add),
-                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 10.5.sp,
+                                color = colors.sub,
                             )
                         }
                     }
@@ -265,8 +332,8 @@ fun RecordEditScreen(
                 if (photoFailed) {
                     Text(
                         text = stringResource(R.string.photo_failed),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp,
+                        color = colors.danger,
                     )
                 }
             }
@@ -280,24 +347,29 @@ fun RecordEditScreen(
                 }
                 Text(
                     text = stringResource(message),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 13.sp,
+                    color = colors.danger,
                 )
             }
 
-            Spacer(Modifier.height(8.dp))
-        }
-
-        Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
-            Button(
-                onClick = viewModel::save,
-                shape = RoundedCornerShape(999.dp),
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
+                    .height(52.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(colors.brand)
+                    .clickable { viewModel.save() },
+                contentAlignment = Alignment.Center,
             ) {
-                Text(stringResource(R.string.action_save))
+                Text(
+                    text = stringResource(R.string.action_save),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.card,
+                )
             }
+
+            Spacer(Modifier.height(12.dp))
         }
     }
 
@@ -329,13 +401,17 @@ fun RecordEditScreen(
 }
 
 @Composable
-private fun SectionBlock(label: String, content: @Composable () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+private fun FieldCard(label: String, content: @Composable () -> Unit) {
+    val colors = LocalAppColors.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(colors.card)
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(9.dp),
+    ) {
+        Text(text = label, fontSize = 12.5.sp, color = colors.sub)
         content()
     }
 }

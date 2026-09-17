@@ -3,6 +3,9 @@
     <string name="app_name">工作快录</string>
     <string name="screen_records">工作记录</string>
     <string name="records_all">全部记录</string>
+    <string name="empty_deleted">记录不存在或已被删除</string>
+    <string name="time_hint">默认填当前时间，补录时可以改</string>
+    <string name="desc_ime_hint">可以用输入法上的麦克风直接说话</string>
     <string name="records_all_meta">共 %1$d 条记录 · 最近更新 %2$s</string>
     <string name="records_all_desc">按时间倒序排列，可搜索、可导出</string>
     <string name="records_meta_photos">%1$d 张照片</string>

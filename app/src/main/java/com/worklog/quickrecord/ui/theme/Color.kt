@@ -16,6 +16,8 @@ data class AppColors(
     val card: Color,
     /** 分隔细线 */
     val divider: Color,
+    /** 控件描边（比分隔线更明显，用于按钮轮廓） */
+    val outline: Color,
     /** 主文字 */
     val ink: Color,
     /** 次要文字 */
@@ -45,6 +47,7 @@ private val LightColors = AppColors(
     page = Color(0xFFF1F3F2),
     card = Color(0xFFFFFFFF),
     divider = Color(0xFFF0F1F0),
+    outline = Color(0xFFD8DEDB),
     ink = Color(0xFF191C1B),
     sub = Color(0xFF9AA0A6),
     subSoft = Color(0xFFB9BFC2),
@@ -64,6 +67,7 @@ private val DarkColors = AppColors(
     page = Color(0xFF0F1211),
     card = Color(0xFF1A1E1D),
     divider = Color(0xFF2A302E),
+    outline = Color(0xFF3C4441),
     ink = Color(0xFFE9EEEC),
     sub = Color(0xFF9AA5A0),
     subSoft = Color(0xFF6E7A75),

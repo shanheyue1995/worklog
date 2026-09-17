@@ -4,6 +4,13 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
+import com.worklog.quickrecord.ui.icons.BackIcon
+import com.worklog.quickrecord.ui.theme.LocalAppColors
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -137,15 +144,29 @@ fun ExportScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 20.dp, top = 8.dp, bottom = 8.dp),
+                .padding(start = 10.dp, end = 16.dp, top = 8.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = onBack) { Text(stringResource(R.string.action_back)) }
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .clickable(onClick = onBack),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = BackIcon,
+                    contentDescription = stringResource(R.string.action_back),
+                    tint = LocalAppColors.current.ink,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
             Text(
                 text = stringResource(R.string.screen_export),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(start = 4.dp),
+                fontSize = 21.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = LocalAppColors.current.ink,
+                modifier = Modifier.padding(start = 6.dp),
             )
         }
 
