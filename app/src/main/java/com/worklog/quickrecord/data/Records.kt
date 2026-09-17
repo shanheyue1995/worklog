@@ -81,6 +81,11 @@ interface RecordDao {
     @Query("SELECT * FROM records WHERE id = :id")
     suspend fun getById(id: Long): RecordWithPhotos?
 
+    /** 最近一条记录，供桌面小组件显示。 */
+    @Transaction
+    @Query("SELECT * FROM records ORDER BY occurredAt DESC LIMIT 1")
+    suspend fun latest(): RecordWithPhotos?
+
     @Query("SELECT relativePath FROM photos WHERE recordId = :recordId")
     suspend fun photoPathsOf(recordId: Long): List<String>
 

@@ -2,6 +2,17 @@
 <resources>
     <string name="app_name">工作快录</string>
     <string name="screen_records">工作记录</string>
+    <string name="records_all">全部记录</string>
+    <string name="records_all_meta">共 %1$d 条记录 · 最近更新 %2$s</string>
+    <string name="records_all_desc">按时间倒序排列，可搜索、可导出</string>
+    <string name="records_meta_photos">%1$d 张照片</string>
+    <string name="records_meta_divider"> | </string>
+    <string name="action_dock_search">搜索</string>
+    <string name="action_more">更多操作</string>
+    <string name="confirm_delete_title">删除这条记录？</string>
+    <string name="confirm_delete_text">删除后无法恢复，照片也会一并删掉。</string>
+    <string name="widget_latest">最近记录</string>
+    <string name="widget_empty_latest">还没有记录</string>
     <string name="screen_new_record">新建记录</string>
     <string name="screen_edit_record">编辑记录</string>
     <string name="screen_record_detail">记录详情</string>

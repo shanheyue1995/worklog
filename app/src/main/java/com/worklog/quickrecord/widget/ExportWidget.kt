@@ -24,6 +24,7 @@ import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
@@ -33,43 +34,47 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.worklog.quickrecord.MainActivity
+import com.worklog.quickrecord.QuickRecordApp
 import com.worklog.quickrecord.data.Preferences
+import com.worklog.quickrecord.domain.Record
 import com.worklog.quickrecord.reminder.ReminderRules
+import com.worklog.quickrecord.util.DisplayFormat
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 /**
- * 桌面小组件：显示距离上次导出过了多久。
+ * 桌面小组件：上半是导出状态，下半是最近一条记录。
  *
- * 这一层是提醒机制的第二道。相比改应用图标，小组件能自由刷新、能带文字，
- * 也不会因为国产系统桌面不支持动态图标而丢图标。
- *
- * 版式参考笔记与待办类应用的小组件：一行小标题、一个放大的数字做主视觉、
- * 一行补充说明；超过阈值时数字与圆点一起变成橙色。
+ * 版式与 APP 内保持一致：白色圆角卡片、细线分隔、圆角徽标；
+ * 超过阈值时圆点与徽标一起变成橙色。
  */
 class ExportWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val lastExport = Preferences(context).lastExportDate.first()
+        val repository = (context.applicationContext as? QuickRecordApp)
+            ?.container
+            ?.recordRepository
+        val latest = repository?.latest()
         provideContent {
             GlanceTheme {
-                WidgetContent(lastExport, context)
+                WidgetContent(lastExport, latest, context)
             }
         }
     }
 }
 
 @Composable
-private fun WidgetContent(lastExport: LocalDate?, context: Context) {
+private fun WidgetContent(lastExport: LocalDate?, latest: Record?, context: Context) {
     val days = lastExport?.let { ChronoUnit.DAYS.between(it, LocalDate.now()) }
-    val isStale = days != null && days >= ReminderRules.STALE_DAYS
+    val isStale = days == null || days >= ReminderRules.STALE_DAYS
 
-    // 提醒色不跟随主题：需要在浅色和深色桌面上都能看清，
-    // 所以取一个中间明度的橙，而不是主题里的强调色。
-    val accent = ColorProvider(Color(0xFFD08A2A))
+    val accent = ColorProvider(if (isStale) Color(0xFFD08A2A) else Color(0xFF2A9C7B))
+    val accentSoft = ColorProvider(if (isStale) Color(0x1FD08A2A) else Color(0x1F2A9C7B))
     val muted = GlanceTheme.colors.onSurfaceVariant
     val strong = GlanceTheme.colors.onSurface
+    val hairline = ColorProvider(Color(0x1F888888))
 
     val openApp: Action = actionStartActivity(Intent(context, MainActivity::class.java))
 
@@ -77,14 +82,17 @@ private fun WidgetContent(lastExport: LocalDate?, context: Context) {
         modifier = GlanceModifier
             .fillMaxSize()
             .background(GlanceTheme.colors.widgetBackground)
-            .cornerRadius(24.dp)
-            .padding(16.dp)
+            .cornerRadius(22.dp)
+            .padding(14.dp)
             .clickable(openApp),
     ) {
-        Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Vertical.CenterVertically,
+        ) {
             Box(
                 modifier = GlanceModifier
-                    .size(8.dp)
+                    .size(7.dp)
                     .background(accent)
                     .cornerRadius(4.dp),
             ) {}
@@ -93,33 +101,60 @@ private fun WidgetContent(lastExport: LocalDate?, context: Context) {
                 text = "工作快录",
                 style = TextStyle(color = muted, fontSize = 12.sp),
             )
+            Spacer(GlanceModifier.defaultWeight())
+            Box(
+                modifier = GlanceModifier
+                    .background(accentSoft)
+                    .cornerRadius(999.dp)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    text = if (days == null) "还没导出" else "$days 天未导出",
+                    style = TextStyle(
+                        color = accent,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                    ),
+                )
+            }
         }
 
-        Spacer(GlanceModifier.height(8.dp))
+        Box(
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(hairline),
+        ) {}
 
-        Row(verticalAlignment = Alignment.Vertical.Bottom) {
+        Spacer(GlanceModifier.height(9.dp))
+        Text(
+            text = "最近记录",
+            style = TextStyle(color = muted, fontSize = 10.5.sp),
+        )
+        Spacer(GlanceModifier.height(3.dp))
+
+        if (latest == null) {
             Text(
-                text = days?.toString() ?: "还没有",
+                text = "记一条，月底一键导出台账",
+                style = TextStyle(color = muted, fontSize = 12.5.sp),
+            )
+        } else {
+            Text(
+                text = "${latest.place} · ${DisplayFormat.short(latest.occurredAt)}",
                 style = TextStyle(
-                    color = if (isStale) accent else strong,
-                    fontSize = 26.sp,
+                    color = strong,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.Medium,
                 ),
+                maxLines = 1,
             )
-            Spacer(GlanceModifier.width(4.dp))
+            Spacer(GlanceModifier.height(2.dp))
             Text(
-                text = if (days == null) "导出过" else "天未导出",
-                style = TextStyle(color = muted, fontSize = 13.sp),
+                text = latest.description,
+                style = TextStyle(color = muted, fontSize = 12.sp),
+                maxLines = 2,
             )
         }
-
-        Spacer(GlanceModifier.height(4.dp))
-
-        Text(
-            text = lastExport?.let { "上次导出 $it" } ?: "记一条，月底一键导出台账",
-            style = TextStyle(color = muted, fontSize = 11.sp),
-            maxLines = 1,
-        )
     }
 }
 

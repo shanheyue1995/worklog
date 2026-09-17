@@ -80,6 +80,8 @@ fun AppRoot(container: AppContainer, modifier: Modifier = Modifier) {
                     onQueryChange = listViewModel::onQueryChange,
                     onOpenRecord = { id -> screen = AppScreen.Detail(id) },
                     onCreateRecord = { screen = AppScreen.Edit(null) },
+                    onEditRecord = { id -> screen = AppScreen.Edit(id) },
+                    onDeleteRecord = listViewModel::deleteRecord,
                     onOpenExport = { screen = AppScreen.Export },
                     modifier = modifier,
                 )

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 data class RecordListUiState(
     val records: List<Record> = emptyList(),
@@ -23,7 +24,7 @@ data class RecordListUiState(
 )
 
 class RecordListViewModel(
-    repository: RecordRepository,
+    private val repository: RecordRepository,
     private val preferences: Preferences,
 ) : ViewModel() {
 
@@ -55,5 +56,9 @@ class RecordListViewModel(
 
     fun onQueryChange(value: String) {
         query.value = value
+    }
+
+    fun deleteRecord(id: Long) {
+        viewModelScope.launch { repository.delete(id) }
     }
 }

@@ -26,6 +26,8 @@ class RecordRepository(
 
     suspend fun countRecords(): Int = dao.countRecords()
 
+    suspend fun latest(): Record? = dao.latest()?.toDomain()
+
     suspend fun listAll(): List<Record> = dao.listAll().map { it.toDomain() }
 
     /** 恢复备份时用：清空现有记录后整批写回。 */
