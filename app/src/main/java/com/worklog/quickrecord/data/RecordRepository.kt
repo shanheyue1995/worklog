@@ -22,10 +22,7 @@ class RecordRepository(
     suspend fun listInRange(from: LocalDateTime, to: LocalDateTime): List<Record> =
         dao.listInRange(from, to).map { it.toDomain() }
 
-    suspend fun findById(id: Long): Record? =
-        dao.listInRange(LocalDateTime.MIN, LocalDateTime.MAX)
-            .firstOrNull { it.record.id == id }
-            ?.toDomain()
+    suspend fun findById(id: Long): Record? = dao.getById(id)?.toDomain()
 
     suspend fun countRecords(): Int = dao.countRecords()
 
@@ -56,11 +53,7 @@ class RecordRepository(
             record.id
         }
 
-        val previousPaths = dao.listInRange(LocalDateTime.MIN, LocalDateTime.MAX)
-            .firstOrNull { it.record.id == id }
-            ?.photos
-            ?.map { it.relativePath }
-            .orEmpty()
+        val previousPaths = dao.photoPathsOf(id)
         val keptPaths = record.photos.map { it.relativePath }.toSet()
         previousPaths.filterNot { keptPaths.contains(it) }.forEach(photoStore::delete)
 
@@ -72,11 +65,7 @@ class RecordRepository(
     }
 
     suspend fun delete(id: Long) = database.withTransaction {
-        val paths = dao.listInRange(LocalDateTime.MIN, LocalDateTime.MAX)
-            .firstOrNull { it.record.id == id }
-            ?.photos
-            ?.map { it.relativePath }
-            .orEmpty()
+        val paths = dao.photoPathsOf(id)
 
         dao.deleteRecord(id)
         paths.forEach(photoStore::delete)

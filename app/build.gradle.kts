@@ -9,15 +9,30 @@ android {
     namespace = "com.worklog.quickrecord"
     compileSdk = 37
 
+    signingConfigs {
+        create("development") {
+            // 固定使用工程内的调试签名。
+            // 默认的调试签名会随构建环境变化（HOME / ANDROID_USER_HOME 不同就换一个），
+            // 一旦漂移，新包就装不上已装的旧包，只能卸载重装、丢掉全部记录。
+            storeFile = rootProject.file("keystore/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.worklog.quickrecord"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 3
+        versionName = "0.2.1"
     }
 
     buildTypes {
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("development")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(

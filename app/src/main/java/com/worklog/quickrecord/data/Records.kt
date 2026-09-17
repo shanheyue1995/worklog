@@ -77,6 +77,13 @@ interface RecordDao {
     @Query("DELETE FROM records WHERE id = :id")
     suspend fun deleteRecord(id: Long)
 
+    @Transaction
+    @Query("SELECT * FROM records WHERE id = :id")
+    suspend fun getById(id: Long): RecordWithPhotos?
+
+    @Query("SELECT relativePath FROM photos WHERE recordId = :recordId")
+    suspend fun photoPathsOf(recordId: Long): List<String>
+
     @Insert
     suspend fun insertPhotos(photos: List<PhotoEntity>)
 
