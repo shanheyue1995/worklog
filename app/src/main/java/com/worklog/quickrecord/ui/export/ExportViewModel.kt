@@ -12,6 +12,7 @@ import com.worklog.quickrecord.data.Preferences
 import com.worklog.quickrecord.data.RecordRepository
 import com.worklog.quickrecord.data.ReportExporter
 import com.worklog.quickrecord.domain.DateRangeCalculator
+import com.worklog.quickrecord.domain.DatePeriod
 import com.worklog.quickrecord.domain.ExportRange
 import com.worklog.quickrecord.domain.Record
 import com.worklog.quickrecord.widget.WidgetRefresh
@@ -57,6 +58,13 @@ class ExportViewModel(
     var summary by mutableStateOf(ExportSummary())
         private set
 
+    /** 自定义范围的起止日期，切换范围时保留上次的选择。 */
+    var customStart by mutableStateOf(LocalDate.now().withDayOfMonth(1))
+        private set
+
+    var customEnd by mutableStateOf(LocalDate.now())
+        private set
+
     var state by mutableStateOf<ExportState>(ExportState.Choosing)
         private set
 
@@ -76,6 +84,25 @@ class ExportViewModel(
         reload()
     }
 
+    fun updateCustomStart(value: LocalDate) {
+        customStart = value
+        if (customEnd.isBefore(value)) customEnd = value
+        state = ExportState.Choosing
+        reload()
+    }
+
+    fun updateCustomEnd(value: LocalDate) {
+        customEnd = value
+        if (customStart.isAfter(value)) customStart = value
+        state = ExportState.Choosing
+        reload()
+    }
+
+    private fun period(today: LocalDate) = when (range) {
+        ExportRange.Custom -> DatePeriod(customStart, customEnd)
+        else -> DateRangeCalculator.period(range, today)
+    }
+
     /**
      * 重新统计当前范围内的记录数。
      *
@@ -83,12 +110,15 @@ class ExportViewModel(
      * 出现"显示 0 条、导出却有内容"这种自相矛盾的情况。
      */
     fun refresh() {
-        if (state == ExportState.Choosing) reload()
+        // 每次进入导出页都回到"选范围"这一步：
+        // 否则会直接显示上一次生成的那份报告，用户新加的记录看不到，像是没更新。
+        state = ExportState.Choosing
+        reload()
     }
 
     private fun reload() {
         viewModelScope.launch {
-            val period = DateRangeCalculator.period(range, LocalDate.now())
+            val period = period(LocalDate.now())
             val records = load(period.start, period.end)
             summary = ExportSummary(
                 start = period.start,
@@ -102,7 +132,7 @@ class ExportViewModel(
     fun generate() {
         state = ExportState.Working
         viewModelScope.launch {
-            val period = DateRangeCalculator.period(range, LocalDate.now())
+            val period = period(LocalDate.now())
             val records = load(period.start, period.end)
 
             if (records.isEmpty()) {

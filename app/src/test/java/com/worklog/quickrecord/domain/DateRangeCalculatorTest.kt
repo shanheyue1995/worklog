@@ -55,4 +55,11 @@ class DateRangeCalculatorTest {
         assertEquals(LocalDate.of(2027, 2, 1), period.start)
         assertEquals(LocalDate.of(2027, 2, 28), period.end)
     }
+
+    @Test
+    fun `自定义范围的兜底值仍然是完整的一个月`() {
+        val period = DateRangeCalculator.period(ExportRange.Custom, LocalDate.of(2026, 9, 16))
+        assertEquals(LocalDate.of(2026, 9, 1), period.start)
+        assertEquals(LocalDate.of(2026, 9, 30), period.end)
+    }
 }

@@ -34,9 +34,12 @@ import java.io.File
  */
 @Composable
 fun PdfFirstPagePreview(file: File, modifier: Modifier = Modifier) {
-    var image by remember(file.path) { mutableStateOf<ImageBitmap?>(null) }
+    // 用「路径 + 修改时间」做键：报告文件名是固定的，重复生成时路径不变，
+    // 只按路径缓存会导致预览一直停在上一次生成的画面上。
+    val cacheKey = file.path + ":" + file.lastModified()
+    var image by remember(cacheKey) { mutableStateOf<ImageBitmap?>(null) }
 
-    LaunchedEffect(file.path) {
+    LaunchedEffect(cacheKey) {
         image = withContext(Dispatchers.IO) { renderFirstPage(file) }?.asImageBitmap()
     }
 

@@ -32,3 +32,18 @@ fun showDateTimePicker(
         initial.dayOfMonth,
     ).show()
 }
+
+/** 只选日期，用于导出范围这类不关心具体时刻的场景。 */
+fun showDatePicker(
+    context: Context,
+    initial: java.time.LocalDate,
+    onPicked: (java.time.LocalDate) -> Unit,
+) {
+    DatePickerDialog(
+        context,
+        { _, year, month, day -> onPicked(java.time.LocalDate.of(year, month + 1, day)) },
+        initial.year,
+        initial.monthValue - 1,
+        initial.dayOfMonth,
+    ).show()
+}

@@ -8,6 +8,9 @@ enum class ExportRange {
     ThisWeek,
     ThisMonth,
     LastMonth,
+
+    /** 自定义范围，起止日期由界面传入。 */
+    Custom,
 }
 
 /** 一个闭区间的日期范围。 */
@@ -36,6 +39,12 @@ object DateRangeCalculator {
         ExportRange.LastMonth -> {
             val lastOfPrevious = today.withDayOfMonth(1).minusDays(1)
             DatePeriod(lastOfPrevious.withDayOfMonth(1), lastOfPrevious)
+        }
+
+        // 兜底：真正的起止日期由界面传入，这里默认给本月
+        ExportRange.Custom -> {
+            val first = today.withDayOfMonth(1)
+            DatePeriod(first, today.with(TemporalAdjusters.lastDayOfMonth()))
         }
     }
 }

@@ -86,11 +86,12 @@ fun RecordListScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Image(
-                    // 用前景图而不是 ic_launcher：后者在 API 26+ 是自适应图标 XML，
+                    // 用 docs/small-icon.png 生成的图形资源。
+                    // 注意不要用 ic_launcher：它在 API 26+ 是自适应图标 XML，
                     // painterResource 只支持矢量图与位图，加载它会直接崩。
-                    painter = painterResource(R.mipmap.ic_launcher_foreground),
+                    painter = painterResource(R.drawable.ic_app_mark),
                     contentDescription = null,
-                    modifier = Modifier.height(34.dp),
+                    modifier = Modifier.height(36.dp),
                 )
                 Spacer(Modifier.width(11.dp))
                 Text(

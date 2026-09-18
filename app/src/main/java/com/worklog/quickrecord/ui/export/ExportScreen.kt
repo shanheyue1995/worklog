@@ -3,14 +3,9 @@ package com.worklog.quickrecord.ui.export
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.sp
-import com.worklog.quickrecord.ui.icons.BackIcon
-import com.worklog.quickrecord.ui.theme.LocalAppColors
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,17 +14,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,14 +33,19 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import com.worklog.quickrecord.R
 import com.worklog.quickrecord.data.BackupManager
 import com.worklog.quickrecord.domain.ExportRange
+import com.worklog.quickrecord.ui.icons.BackIcon
+import com.worklog.quickrecord.ui.showDatePicker
+import com.worklog.quickrecord.ui.theme.LocalAppColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -61,12 +58,35 @@ fun ExportScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = LocalAppColors.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var message by remember { mutableStateOf<String?>(null) }
     var confirmRestore by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { viewModel.refresh() }
+
+    val saveLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf"),
+    ) { uri ->
+        val done = viewModel.state as? ExportState.Done ?: return@rememberLauncherForActivityResult
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                try {
+                    context.contentResolver.openOutputStream(uri)?.use { output ->
+                        done.file.inputStream().use { input -> input.copyTo(output) }
+                        true
+                    } ?: false
+                } catch (error: Exception) {
+                    false
+                }
+            }
+            message = context.getString(
+                if (ok) R.string.export_saved else R.string.export_save_failed,
+            )
+        }
+    }
 
     val backupLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/zip"),
@@ -118,29 +138,7 @@ fun ExportScreen(
         }
     }
 
-    val saveLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/pdf"),
-    ) { uri ->
-        val done = viewModel.state as? ExportState.Done ?: return@rememberLauncherForActivityResult
-        if (uri == null) return@rememberLauncherForActivityResult
-        scope.launch {
-            val ok = withContext(Dispatchers.IO) {
-                try {
-                    context.contentResolver.openOutputStream(uri)?.use { output ->
-                        done.file.inputStream().use { input -> input.copyTo(output) }
-                        true
-                    } ?: false
-                } catch (error: Exception) {
-                    false
-                }
-            }
-            message = context.getString(
-                if (ok) R.string.export_saved else R.string.export_save_failed,
-            )
-        }
-    }
-
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize().background(colors.page)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -157,208 +155,217 @@ fun ExportScreen(
                 Icon(
                     imageVector = BackIcon,
                     contentDescription = stringResource(R.string.action_back),
-                    tint = LocalAppColors.current.ink,
+                    tint = colors.ink,
                     modifier = Modifier.size(24.dp),
                 )
             }
+            Spacer(Modifier.width(6.dp))
             Text(
                 text = stringResource(R.string.screen_export),
                 fontSize = 21.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = LocalAppColors.current.ink,
-                modifier = Modifier.padding(start = 6.dp),
+                letterSpacing = (-0.3).sp,
+                color = colors.ink,
             )
         }
 
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            when (val state = viewModel.state) {
-                ExportState.Choosing -> {
-                    RangePicker(current = viewModel.range, onSelect = viewModel::selectRange)
-
-                    Card(
-                        shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                        modifier = Modifier.fillMaxWidth(),
+        when (val state = viewModel.state) {
+            ExportState.Choosing -> Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                FieldCard(stringResource(R.string.label_range)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(colors.page)
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            Text(
-                                text = "${viewModel.summary.start} ~ ${viewModel.summary.end}",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium,
+                        ExportRange.entries.forEach { range ->
+                            val active = range == viewModel.range
+                            val label = stringResource(
+                                when (range) {
+                                    ExportRange.ThisWeek -> R.string.range_week
+                                    ExportRange.ThisMonth -> R.string.range_month
+                                    ExportRange.LastMonth -> R.string.range_last_month
+                                    ExportRange.Custom -> R.string.range_custom
+                                },
                             )
-                            Text(
-                                text = stringResource(
-                                    R.string.export_summary,
-                                    viewModel.summary.recordCount,
-                                    viewModel.summary.photoCount,
-                                ),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.export_note),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(14.dp),
-                        )
-                    }
-
-                    // 纯本地方案下，备份是唯一的数据保险，放在导出页一起出现。
-                    Card(
-                        shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = stringResource(R.string.backup_title),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium,
-                            )
-                            Text(
-                                text = stringResource(R.string.backup_note),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Button(
-                                    onClick = {
-                                        backupLauncher.launch("工作快录备份.zip")
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                ) {
-                                    Text(stringResource(R.string.action_backup))
-                                }
-                                OutlinedButton(
-                                    onClick = { confirmRestore = true },
-                                    modifier = Modifier.weight(1f),
-                                ) {
-                                    Text(stringResource(R.string.action_restore))
-                                }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(36.dp)
+                                    .clip(RoundedCornerShape(999.dp))
+                                    .background(if (active) colors.card else colors.page)
+                                    .clickable { viewModel.selectRange(range) },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = label,
+                                    fontSize = 13.sp,
+                                    fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+                                    color = if (active) colors.ink else colors.sub,
+                                )
                             }
                         }
                     }
-                }
 
-                ExportState.Working -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 48.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator()
-                            Spacer(Modifier.height(12.dp))
-                            Text(stringResource(R.string.export_working))
+                    // 选「自定义」时才出现，给两个日期入口
+                    if (viewModel.range == ExportRange.Custom) {
+                        DateRow(
+                            label = stringResource(R.string.custom_start),
+                            value = viewModel.customStart.toString(),
+                        ) {
+                            showDatePicker(context, viewModel.customStart, viewModel::updateCustomStart)
+                        }
+                        DateRow(
+                            label = stringResource(R.string.custom_end),
+                            value = viewModel.customEnd.toString(),
+                        ) {
+                            showDatePicker(context, viewModel.customEnd, viewModel::updateCustomEnd)
                         }
                     }
                 }
 
-                is ExportState.Done -> {
+                FieldCard(null) {
+                    KeyValueRow(stringResource(R.string.export_range), "${viewModel.summary.start} ~ ${viewModel.summary.end}")
+                    KeyValueRow(stringResource(R.string.export_records), context.getString(R.string.export_count_records, viewModel.summary.recordCount))
+                    KeyValueRow(stringResource(R.string.export_photos), context.getString(R.string.export_count_photos, viewModel.summary.photoCount))
+                }
+
+                FieldCard(null) {
                     Text(
-                        text = stringResource(
+                        text = stringResource(R.string.export_note),
+                        fontSize = 12.5.sp,
+                        lineHeight = 20.sp,
+                        color = colors.sub,
+                    )
+                }
+
+                FieldCard(stringResource(R.string.backup_title)) {
+                    Text(
+                        text = stringResource(R.string.backup_note),
+                        fontSize = 12.5.sp,
+                        lineHeight = 20.sp,
+                        color = colors.sub,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        PillButton(
+                            text = stringResource(R.string.action_backup),
+                            filled = true,
+                            modifier = Modifier.weight(1f),
+                        ) { backupLauncher.launch("工作快录备份.zip") }
+                        PillButton(
+                            text = stringResource(R.string.action_restore),
+                            filled = false,
+                            modifier = Modifier.weight(1f),
+                        ) { confirmRestore = true }
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(colors.brand)
+                        .clickable { viewModel.generate() },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.action_generate),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.card,
+                    )
+                }
+
+                Spacer(Modifier.height(12.dp))
+            }
+
+            ExportState.Working -> Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = colors.brand)
+                    Spacer(Modifier.height(14.dp))
+                    Text(stringResource(R.string.export_working), color = colors.sub, fontSize = 13.sp)
+                }
+            }
+
+            is ExportState.Done -> {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        text = context.getString(
                             R.string.export_summary,
                             state.recordCount,
                             state.photoCount,
                         ) + " · " + stringResource(R.string.export_pages, state.pageCount),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.5.sp,
+                        color = colors.sub,
                     )
-                    PdfFirstPagePreview(
-                        file = state.file,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        OutlinedButton(
-                            onClick = {
-                                saveLauncher.launch(
-                                    state.file.nameWithoutExtension + ".pdf",
-                                )
-                            },
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Text(stringResource(R.string.action_save_file))
-                        }
-                        Button(
-                            onClick = { sharePdf(context, state.file) },
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Text(stringResource(R.string.action_share))
-                        }
-                    }
+                    PdfFirstPagePreview(file = state.file, modifier = Modifier.fillMaxWidth())
+                    Spacer(Modifier.height(8.dp))
                 }
-
-                ExportState.Empty, ExportState.Failed -> {
-                    val text = stringResource(
-                        if (state == ExportState.Empty) R.string.export_empty else R.string.export_failed,
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 48.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    OutlinedButton(
-                        onClick = viewModel::backToChoosing,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(stringResource(R.string.action_back))
-                    }
-                }
-            }
-
-            message?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-
-            Spacer(Modifier.height(8.dp))
-        }
-
-        if (viewModel.state == ExportState.Choosing) {
-            Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
-                Button(
-                    onClick = viewModel::generate,
-                    shape = RoundedCornerShape(999.dp),
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp),
+                        .padding(horizontal = 14.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Text(stringResource(R.string.action_generate))
+                    PillButton(
+                        text = stringResource(R.string.action_save_file),
+                        filled = false,
+                        modifier = Modifier.weight(1f),
+                    ) { saveLauncher.launch(state.file.nameWithoutExtension + ".pdf") }
+                    PillButton(
+                        text = stringResource(R.string.action_share),
+                        filled = true,
+                        modifier = Modifier.weight(1f),
+                    ) { sharePdf(context, state.file) }
                 }
             }
+
+            ExportState.Empty, ExportState.Failed -> Column(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = stringResource(
+                        if (state == ExportState.Empty) R.string.export_empty else R.string.export_failed,
+                    ),
+                    fontSize = 14.sp,
+                    color = colors.sub,
+                )
+                Spacer(Modifier.height(16.dp))
+                PillButton(
+                    text = stringResource(R.string.action_back),
+                    filled = false,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { viewModel.backToChoosing() }
+            }
+        }
+
+        message?.let {
+            Text(
+                text = it,
+                fontSize = 13.sp,
+                color = colors.brand,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            )
         }
     }
 
@@ -371,11 +378,9 @@ fun ExportScreen(
                 TextButton(
                     onClick = {
                         confirmRestore = false
-                        // 只用通配：不同机型对 zip 的 MIME 判定不一致，
-                        // 指定具体类型反而会把备份包过滤掉，用户看不到文件。
                         restoreLauncher.launch(arrayOf("*/*"))
                     },
-                ) { Text(stringResource(R.string.action_confirm)) }
+                ) { Text(stringResource(R.string.action_confirm), color = colors.brand) }
             },
             dismissButton = {
                 TextButton(onClick = { confirmRestore = false }) {
@@ -387,37 +392,78 @@ fun ExportScreen(
 }
 
 @Composable
-private fun RangePicker(current: ExportRange, onSelect: (ExportRange) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+private fun FieldCard(label: String?, content: @Composable () -> Unit) {
+    val colors = LocalAppColors.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(colors.card)
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(9.dp),
+    ) {
+        label?.let { Text(text = it, fontSize = 12.5.sp, color = colors.sub) }
+        content()
+    }
+}
+
+@Composable
+private fun KeyValueRow(key: String, value: String) {
+    val colors = LocalAppColors.current
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(text = key, fontSize = 14.sp, color = colors.sub)
+        Text(text = value, fontSize = 14.sp, color = colors.ink)
+    }
+}
+
+@Composable
+private fun DateRow(label: String, value: String, onClick: () -> Unit) {
+    val colors = LocalAppColors.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(colors.page)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = label, fontSize = 14.sp, color = colors.sub)
         Text(
-            text = stringResource(R.string.label_range),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            text = value,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Medium,
+            color = colors.ink,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ExportRange.entries.forEach { range ->
-                val label = stringResource(
-                    when (range) {
-                        ExportRange.ThisWeek -> R.string.range_week
-                        ExportRange.ThisMonth -> R.string.range_month
-                        ExportRange.LastMonth -> R.string.range_last_month
-                    },
-                )
-                if (range == current) {
-                    Button(
-                        onClick = { onSelect(range) },
-                        shape = RoundedCornerShape(999.dp),
-                        modifier = Modifier.weight(1f),
-                    ) { Text(label) }
-                } else {
-                    OutlinedButton(
-                        onClick = { onSelect(range) },
-                        shape = RoundedCornerShape(999.dp),
-                        modifier = Modifier.weight(1f),
-                    ) { Text(label) }
-                }
-            }
-        }
+    }
+}
+
+@Composable
+private fun PillButton(
+    text: String,
+    filled: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val colors = LocalAppColors.current
+    Box(
+        modifier = modifier
+            .height(46.dp)
+            .clip(RoundedCornerShape(999.dp))
+            .background(if (filled) colors.brandSoft else colors.card)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = if (filled) colors.brand else colors.ink,
+        )
     }
 }
 
@@ -428,7 +474,5 @@ private fun sharePdf(context: android.content.Context, file: File) {
         putExtra(Intent.EXTRA_STREAM, uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    context.startActivity(
-        Intent.createChooser(intent, context.getString(R.string.share_chooser)),
-    )
+    context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_chooser)))
 }
