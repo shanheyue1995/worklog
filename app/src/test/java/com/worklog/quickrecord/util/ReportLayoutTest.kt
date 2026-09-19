@@ -75,4 +75,47 @@ class ReportLayoutTest {
     fun `内容比内容区还宽时不产生负偏移`() {
         assertEquals(0f, ReportLayout.rowStartX(515f, 600f), 0.01f)
     }
+
+    @Test
+    fun `页数少时预览保持最清晰倍率`() {
+        // A4 一页按 1.4 倍渲染约 3.9MB，几页的报告完全吃得下
+        assertEquals(ReportLayout.PREVIEW_MAX_SCALE, ReportLayout.previewScale(1, 595, 842), 0.001f)
+        assertEquals(ReportLayout.PREVIEW_MAX_SCALE, ReportLayout.previewScale(4, 595, 842), 0.001f)
+    }
+
+    @Test
+    fun `页数多时预览自动降低倍率以控制内存`() {
+        val scale = ReportLayout.previewScale(20, 595, 842)
+        assertTrue("倍率应当降下来，实际 $scale", scale < ReportLayout.PREVIEW_MAX_SCALE)
+        assertTrue("倍率不应低于下限，实际 $scale", scale >= ReportLayout.PREVIEW_MIN_SCALE)
+    }
+
+    @Test
+    fun `预览图占用的内存始终不超过预算`() {
+        // 倍率是 Float，回算字节数会有极小的舍入误差，留千分之一的余量
+        val budget = ReportLayout.PREVIEW_BUDGET_BYTES * 1.001
+        (1..20).forEach { pages ->
+            val scale = ReportLayout.previewScale(pages, 595, 842)
+            val bytes = pages * 595.0 * 842.0 * scale * scale * 4.0
+            assertTrue(
+                "$pages 页占用 ${bytes.toLong()} 字节，超出预算",
+                bytes <= budget,
+            )
+        }
+    }
+
+    @Test
+    fun `页数越多预览倍率只会变小`() {
+        val scales = listOf(1, 2, 4, 8, 16, 20).map { ReportLayout.previewScale(it, 595, 842) }
+        scales.zipWithNext().forEach { (previous, next) ->
+            assertTrue("$previous -> $next", next <= previous + 0.0001f)
+        }
+    }
+
+    @Test
+    fun `页面尺寸异常时退回默认倍率而不是崩溃`() {
+        assertEquals(ReportLayout.PREVIEW_MAX_SCALE, ReportLayout.previewScale(0, 595, 842), 0.001f)
+        assertEquals(ReportLayout.PREVIEW_MAX_SCALE, ReportLayout.previewScale(3, 0, 842), 0.001f)
+        assertEquals(ReportLayout.PREVIEW_MAX_SCALE, ReportLayout.previewScale(3, 595, 0), 0.001f)
+    }
 }

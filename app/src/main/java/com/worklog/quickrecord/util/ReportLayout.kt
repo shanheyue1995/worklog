@@ -1,5 +1,7 @@
 package com.worklog.quickrecord.util
 
+import kotlin.math.sqrt
+
 /**
  * 报告里照片的排布换算。
  *
@@ -9,10 +11,36 @@ package com.worklog.quickrecord.util
  */
 object ReportLayout {
 
-    const val MAX_PHOTO_HEIGHT = 240f
+    /** 单张照片在报告里的最大高度。调小一点可以让一页容纳更多记录。 */
+    const val MAX_PHOTO_HEIGHT = 190f
     const val COLUMN_GAP = 10f
 
+    /** 预览时的最清晰倍率和最低倍率。 */
+    const val PREVIEW_MAX_SCALE = 1.4f
+    const val PREVIEW_MIN_SCALE = 0.75f
+
+    /** 预览所有页面加起来允许占用的内存（字节）。手机堆内存有限，超过就会被系统杀掉。 */
+    const val PREVIEW_BUDGET_BYTES = 24_000_000.0
+
+    private const val BYTES_PER_PIXEL = 4.0
+
     data class Size(val width: Float, val height: Float)
+
+    /**
+     * 预览图的渲染倍率。
+     *
+     * 报告可能有很多页，每页都按最清晰倍率渲染成位图会吃掉大量内存，
+     * 低配手机上会直接渲染失败、预览一片空白。这里按「所有页面加起来的像素总量」
+     * 反推倍率：页数少时保持清晰，页数多时自动降一点清晰度，保证总占用不超标。
+     */
+    fun previewScale(pageCount: Int, pageWidth: Int, pageHeight: Int): Float {
+        if (pageCount <= 0 || pageWidth <= 0 || pageHeight <= 0) return PREVIEW_MAX_SCALE
+        val bytesAtFullScale =
+            pageCount.toDouble() * pageWidth.toDouble() * pageHeight.toDouble() * BYTES_PER_PIXEL
+        if (bytesAtFullScale <= 0.0 || !bytesAtFullScale.isFinite()) return PREVIEW_MAX_SCALE
+        val scale = sqrt(PREVIEW_BUDGET_BYTES / bytesAtFullScale).toFloat()
+        return scale.coerceIn(PREVIEW_MIN_SCALE, PREVIEW_MAX_SCALE)
+    }
 
     fun photoSize(contentWidth: Float, perRow: Int, photoWidth: Int, photoHeight: Int): Size {
         val columns = perRow.coerceAtLeast(1)

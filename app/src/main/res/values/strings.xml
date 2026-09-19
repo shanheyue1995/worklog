@@ -41,6 +41,7 @@
     <string name="export_empty">这个范围内还没有记录，换个范围试试</string>
     <string name="export_failed">报告生成失败，请稍后再试</string>
     <string name="export_pages">共 %1$d 页</string>
+    <string name="export_preview_truncated">报告共 %1$d 页，预览只显示前 %2$d 页</string>
     <string name="export_summary">%1$d 条记录 · %2$d 张照片</string>
     <string name="share_chooser">分享报告</string>
     <string name="export_saved">报告已保存</string>

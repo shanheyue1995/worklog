@@ -316,7 +316,7 @@ fun ExportScreen(
                         fontSize = 12.5.sp,
                         color = colors.sub,
                     )
-                    PdfFirstPagePreview(file = state.file, modifier = Modifier.fillMaxWidth())
+                    PdfPreview(file = state.file, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(8.dp))
                 }
                 Row(
