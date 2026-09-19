@@ -15,6 +15,11 @@ local.properties
 .idea/
 *.iml
 
+# 正式签名文件绝不能入库（调试用的 keystore/debug.keystore 是例外，见 keystore/README.md）
+*.jks
+*-release.keystore
+release/
+
 # 系统文件
 .DS_Store
 Thumbs.db
