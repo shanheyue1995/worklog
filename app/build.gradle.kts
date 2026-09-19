@@ -1,9 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
 }
+
+// 正式签名信息放在 keystore/release.properties（不入库，见 keystore/README.md）。
+// 没有这个文件时 release 包是未签名的，别人克隆下来照样能构建、能跑测试。
+val releaseSigning: Map<String, String> = rootProject.file("keystore/release.properties")
+    .takeIf { it.exists() }
+    ?.let { file ->
+        Properties().apply { file.inputStream().use { load(it) } }
+            .entries
+            .associate { (key, value) -> key.toString() to value.toString() }
+    }
+    ?: emptyMap()
 
 android {
     namespace = "com.worklog.quickrecord"
@@ -18,6 +31,15 @@ android {
             storePassword = "android"
             keyAlias = "androiddebugkey"
             keyPassword = "android"
+        }
+
+        if (releaseSigning.isNotEmpty()) {
+            create("release") {
+                storeFile = rootProject.file(releaseSigning.getValue("storeFile"))
+                storePassword = releaseSigning.getValue("storePassword")
+                keyAlias = releaseSigning.getValue("keyAlias")
+                keyPassword = releaseSigning.getValue("keyPassword")
+            }
         }
     }
 
@@ -35,6 +57,9 @@ android {
         }
         release {
             isMinifyEnabled = false
+            if (releaseSigning.isNotEmpty()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

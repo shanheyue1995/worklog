@@ -30,9 +30,17 @@
 
 ## 截图
 
-> 待补充：`docs/screenshots/` 目录还没放图。建议用自己的手机、**用假数据**截几张（新建记录、记录列表、导出预览、桌面小组件），
-> 然后在这里引用，例如 `![记录列表](docs/screenshots/list.png)`。
-> 注意不要把自己学校的真实记录、照片和人名发到公开仓库。
+下面几张图用的都是假数据（记录和照片都是编的）。
+
+| 记录列表 | 记录详情 |
+| --- | --- |
+| ![记录列表](docs/screenshots/list.png) | ![记录详情](docs/screenshots/detail.png) |
+
+| 新建／编辑记录 | 导出预览 |
+| --- | --- |
+| ![编辑记录](docs/screenshots/edit.png) | ![导出预览](docs/screenshots/export.png) |
+
+桌面小组件必须手动拖到桌面才能出现，命令行截不了图，暂时缺这一张（见 [docs/screenshots/README.md](docs/screenshots/README.md)）。
 
 ## 技术栈
 
