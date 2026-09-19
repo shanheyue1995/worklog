@@ -8,14 +8,14 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.worklog.quickrecord.data.PhotoStore
-import com.worklog.quickrecord.data.Preferences
 import com.worklog.quickrecord.data.RecordRepository
 import com.worklog.quickrecord.data.ReportExporter
 import com.worklog.quickrecord.domain.DateRangeCalculator
 import com.worklog.quickrecord.domain.DatePeriod
+import com.worklog.quickrecord.domain.ExportAction
 import com.worklog.quickrecord.domain.ExportRange
 import com.worklog.quickrecord.domain.Record
-import com.worklog.quickrecord.widget.WidgetRefresh
+import com.worklog.quickrecord.reminder.ExportStamp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -48,7 +48,6 @@ class ExportViewModel(
     private val repository: RecordRepository,
     private val photoStore: PhotoStore,
     private val exportDir: File,
-    private val preferences: Preferences,
     private val appContext: Context,
 ) : ViewModel() {
 
@@ -158,8 +157,6 @@ class ExportViewModel(
             state = if (result == null) {
                 ExportState.Failed
             } else {
-                preferences.setLastExportDate(LocalDate.now())
-                WidgetRefresh.refresh(appContext)
                 ExportState.Done(
                     file = result.file,
                     pageCount = result.pageCount,
@@ -167,6 +164,19 @@ class ExportViewModel(
                     photoCount = result.photoCount,
                 )
             }
+        }
+    }
+
+    /**
+     * 记下「用户真的把报告导出出去了」。
+     *
+     * 提醒条、每月通知和桌面小组件都看这个日期，所以必须等到用户真的把文件
+     * 保存下来或者分享出去之后才更新：只点了「生成报告」看预览的话，用户很
+     * 可能看完发现漏记了，回头补完再导，这时候不该把提醒重置掉。
+     */
+    fun markExported(action: ExportAction) {
+        viewModelScope.launch {
+            ExportStamp.mark(appContext, action)
         }
     }
 

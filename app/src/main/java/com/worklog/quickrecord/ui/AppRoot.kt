@@ -64,7 +64,6 @@ fun AppRoot(container: AppContainer, modifier: Modifier = Modifier) {
                     repository = container.recordRepository,
                     photoStore = container.photoStore,
                     exportDir = container.exportDir,
-                    preferences = container.preferences,
                     appContext = container.appContext,
                 )
             }

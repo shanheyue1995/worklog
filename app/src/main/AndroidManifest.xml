@@ -29,7 +29,7 @@
           否则调用系统相机反而要先申请该权限。
         -->
         <provider
-            android:name="androidx.core.content.FileProvider"
+            android:name=".data.ExportFileProvider"
             android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">

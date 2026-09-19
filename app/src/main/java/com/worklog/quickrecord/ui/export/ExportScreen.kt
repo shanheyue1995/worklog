@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import com.worklog.quickrecord.R
 import com.worklog.quickrecord.data.BackupManager
+import com.worklog.quickrecord.domain.ExportAction
 import com.worklog.quickrecord.domain.ExportRange
 import com.worklog.quickrecord.ui.icons.BackIcon
 import com.worklog.quickrecord.ui.showDatePicker
@@ -85,6 +86,8 @@ fun ExportScreen(
             message = context.getString(
                 if (ok) R.string.export_saved else R.string.export_save_failed,
             )
+            // 文件真的写进用户选的位置了，这才算导出了一次
+            if (ok) viewModel.markExported(ExportAction.SaveFile)
         }
     }
 
@@ -467,6 +470,13 @@ private fun PillButton(
     }
 }
 
+/**
+ * 分享报告。
+ *
+ * 这里不判断「有没有分享成功」：分享面板不会把用户选了哪个 App 告诉我们，
+ * 用户取消也拿不到可靠信号。真正的判定放在 [com.worklog.quickrecord.data.ExportFileProvider]，
+ * 由文件被别的 App 读走这件事触发。
+ */
 private fun sharePdf(context: android.content.Context, file: File) {
     val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
     val intent = Intent(Intent.ACTION_SEND).apply {
