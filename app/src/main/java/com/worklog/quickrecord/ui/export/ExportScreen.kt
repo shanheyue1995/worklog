@@ -138,6 +138,9 @@ fun ExportScreen(
             } else {
                 context.getString(R.string.restore_failed)
             }
+            // 恢复之后记录全换了，页上的条数、照片数得重新统计一次，
+            // 否则会停在恢复前的数字上，看着像没生效。
+            if (count != null) viewModel.refresh()
         }
     }
 
