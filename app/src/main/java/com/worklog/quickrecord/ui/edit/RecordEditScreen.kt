@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -144,7 +145,9 @@ fun RecordEditScreen(
         if (viewModel.saved) onSaved()
     }
 
-    Column(modifier = modifier.fillMaxSize().background(colors.page)) {
+    // imePadding：键盘弹出时整页上移，否则下面被键盘挡住的部分（包括「保存记录」）
+    // 既看不见也点不到，得先手动收起键盘才能保存。
+    Column(modifier = modifier.fillMaxSize().background(colors.page).imePadding()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
