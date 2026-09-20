@@ -9,7 +9,7 @@
 ## 下载安装
 
 到 [Releases](https://github.com/shanheyue1995/worklog/releases/latest) 页面下载最新的
-`WorkLog-v0.2.1.apk`，用手机点开安装即可（要求 Android 8.0 及以上，这个包是正式签名版，不是调试包）。
+`WorkLog-v*.apk`，用手机点开安装即可（要求 Android 8.0 及以上，这个包是正式签名版，不是调试包）。
 系统提示"未知来源应用"时，允许安装这一次即可。
 
 App 里没有任何预置数据，装完是空的，直接从"新建"开始记就行。
